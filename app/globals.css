@@ -23,4 +23,166 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+  /* Prevent horizontal scroll from rain */
+}
+
+/* Rain Animation - Global */
+.rain-container {
+  position: fixed;
+  /* Fixed to viewport */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 9999;
+  /* On top of everything */
+}
+
+.rain-drop {
+  position: absolute;
+  top: -10%;
+  animation: fall linear infinite;
+  opacity: 0.8;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translateY(110vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* =========================
+   HEART LOCK (CSS ONLY)
+========================= */
+
+.heart-wrapper {
+  position: relative;
+  width: 220px;
+  height: 250px;
+  /* Increased height for shackle */
+  margin: 40px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* The Shackle (Hoop) */
+.lock-shackle {
+  position: absolute;
+  top: 0;
+  width: 100px;
+  height: 100px;
+  border: 12px solid #cbd5e1;
+  /* Silver/Slate-300 */
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+  z-index: 0;
+  /* Behind heart */
+  transition: transform 0.4s ease;
+  transform-origin: bottom right;
+}
+
+.heart-unlocked .lock-shackle {
+  transform: rotate(-15deg) translateY(-10px);
+}
+
+/* The Heart (Lock Body) */
+.heart-lock {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  background: #e11d48;
+  transform: rotate(-45deg);
+  top: 90px;
+  /* Pushed down to reveal shackle */
+  z-index: 1;
+  /* In front of shackle */
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  transition: background 0.4s ease;
+}
+
+.heart-lock::before,
+.heart-lock::after {
+  content: "";
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  background: #e11d48;
+  border-radius: 50%;
+  transition: background 0.4s ease;
+}
+
+.heart-lock::before {
+  top: -70px;
+  left: 0;
+}
+
+.heart-lock::after {
+  left: 70px;
+  top: 0;
+}
+
+/* Keyhole */
+.keyhole {
+  position: absolute;
+  top: 150px;
+  /* Adjust to center visually in heart */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 24px;
+  background: #4a0416;
+  /* Dark red/black */
+  border-radius: 10px 10px 0 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.keyhole::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  /* Narrower bottom */
+  height: 14px;
+  background: #4a0416;
+}
+
+/* Unlock Glow/Color Change */
+.heart-unlocked .heart-lock,
+.heart-unlocked .heart-lock::before,
+.heart-unlocked .heart-lock::after {
+  background: #ec4899;
+  /* Lighter Pink */
+  box-shadow: 0 0 40px rgba(255, 0, 120, 0.7);
+}
+
+/* Pulse Animation */
+@keyframes heartPulse {
+  0% {
+    transform: rotate(-45deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(-45deg) scale(1.05);
+  }
+
+  100% {
+    transform: rotate(-45deg) scale(1);
+  }
+}
+
+.heart-pulse .heart-lock {
+  animation: heartPulse 2s infinite ease-in-out;
 }
