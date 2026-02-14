@@ -97,8 +97,7 @@ export default function Game2() {
         }
     };
 
-    // 🔥 TOUCH SUPPORT
-    const getCellFromTouch = (clientX: number, clientY: number) => {
+    const getCellFromPointer = (clientX: number, clientY: number) => {
         const rect = gridRef.current?.getBoundingClientRect();
         if (!rect) return null;
 
@@ -112,9 +111,8 @@ export default function Game2() {
         return null;
     };
 
-    const handleTouchStart = (e: React.TouchEvent) => {
-        const touch = e.touches[0];
-        const cell = getCellFromTouch(touch.clientX, touch.clientY);
+    const handlePointerDown = (e: React.PointerEvent) => {
+        const cell = getCellFromPointer(e.clientX, e.clientY);
         if (!cell) return;
 
         if (cell.x === start[0] && cell.y === start[1]) {
@@ -123,16 +121,16 @@ export default function Game2() {
         }
     };
 
-    const handleTouchMove = (e: React.TouchEvent) => {
+    const handlePointerMove = (e: React.PointerEvent) => {
         if (!drawing) return;
-        const touch = e.touches[0];
-        const cell = getCellFromTouch(touch.clientX, touch.clientY);
+
+        const cell = getCellFromPointer(e.clientX, e.clientY);
         if (!cell) return;
 
         handleEnter(cell.x, cell.y);
     };
 
-    const handleTouchEnd = () => {
+    const handlePointerUp = () => {
         setDrawing(false);
     };
 
@@ -162,9 +160,8 @@ export default function Game2() {
                             green goal
                         </span>
                         .
-                        <br />
-                        <br />
-                        Drag to draw your way through!
+                        <br /><br />
+                        Drag from pink to green ❤️
                     </p>
                     <button
                         onClick={() => setStarted(true)}
@@ -181,31 +178,30 @@ export default function Game2() {
 
                     <div
                         ref={gridRef}
-                        className="grid touch-none"
+                        className="grid"
                         style={{
                             gridTemplateColumns: `repeat(${SIZE}, 1fr)`,
                             width: "85vw",
                             maxWidth: "700px",
+                            touchAction: "none", // 🔥 critical for mobile
                         }}
-                        onMouseUp={() => setDrawing(false)}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerLeave={handlePointerUp}
                     >
                         {maze.map((row, y) =>
                             row.map((cell, x) => {
                                 const key = `${x}-${y}`;
-                                const isStart =
-                                    x === start[0] && y === start[1];
-                                const isGoal =
-                                    x === goal[0] && y === goal[1];
+                                const isStart = x === start[0] && y === start[1];
+                                const isGoal = x === goal[0] && y === goal[1];
                                 const isPath = path.has(key);
 
                                 return (
                                     <div
                                         key={key}
                                         className={`aspect-square
-                  ${cell === 1
+                                            ${cell === 1
                                                 ? "bg-gray-900"
                                                 : isStart
                                                     ? "bg-pink-500"
@@ -214,16 +210,8 @@ export default function Game2() {
                                                         : isPath
                                                             ? "bg-purple-500"
                                                             : "bg-gray-600"
-                                            }`}
-                                        onMouseDown={() => {
-                                            if (isStart) {
-                                                setDrawing(true);
-                                                setPath(new Set([key]));
                                             }
-                                        }}
-                                        onMouseEnter={() =>
-                                            handleEnter(x, y)
-                                        }
+                                        `}
                                     />
                                 );
                             })
