@@ -92,12 +92,10 @@ export default function Game2() {
         const cell = getCellFromPointer(e.clientX, e.clientY);
         if (!cell) return;
 
+        // Must start on pink tile
         if (cell.x === start[0] && cell.y === start[1]) {
             setDrawing(true);
             setPath(new Set([`${cell.x}-${cell.y}`]));
-
-            // CAPTURE POINTER ON GRID
-            gridRef.current?.setPointerCapture(e.pointerId);
         }
     };
 
@@ -110,9 +108,8 @@ export default function Game2() {
         handleEnter(cell.x, cell.y);
     };
 
-    const handlePointerUp = (e: React.PointerEvent) => {
+    const handlePointerUp = () => {
         setDrawing(false);
-        gridRef.current?.releasePointerCapture(e.pointerId);
     };
 
     if (maze.length === 0) return null;
@@ -132,7 +129,7 @@ export default function Game2() {
                         Love Maze
                     </h1>
                     <p className="text-lg mb-8 opacity-80 leading-relaxed">
-                        Drag from the pink start to the green goal ❤️
+                        Touch and drag from the pink start to the green goal ❤️
                     </p>
                     <button
                         onClick={() => setStarted(true)}
@@ -144,7 +141,7 @@ export default function Game2() {
             ) : (
                 <>
                     <h2 className="text-2xl mb-4 text-pink-500 font-bold">
-                        Draw a path!
+                        Drag to draw!
                     </h2>
 
                     <div
@@ -158,7 +155,6 @@ export default function Game2() {
                         onPointerDown={handlePointerDown}
                         onPointerMove={handlePointerMove}
                         onPointerUp={handlePointerUp}
-                        onPointerCancel={handlePointerUp}
                         onPointerLeave={handlePointerUp}
                     >
                         {maze.map((row, y) =>
@@ -172,20 +168,24 @@ export default function Game2() {
                                     <div
                                         key={key}
                                         className={`aspect-square ${cell === 1
-                                            ? "bg-gray-900"
-                                            : isStart
-                                                ? "bg-pink-500"
-                                                : isGoal
-                                                    ? "bg-green-500"
-                                                    : isPath
-                                                        ? "bg-purple-500"
-                                                        : "bg-gray-600"
+                                                ? "bg-gray-900"
+                                                : isStart
+                                                    ? "bg-pink-500"
+                                                    : isGoal
+                                                        ? "bg-green-500"
+                                                        : isPath
+                                                            ? "bg-purple-500"
+                                                            : "bg-gray-600"
                                             }`}
                                     />
                                 );
                             })
                         )}
                     </div>
+
+                    <p className="mt-6 text-sm opacity-70">
+                        Start from pink.
+                    </p>
                 </>
             )}
         </div>
