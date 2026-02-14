@@ -4,18 +4,19 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { completeGame } from "@/lib/progress";
 
-const SIZE = 30;
+const SIZE = 25;
+const CELL = 24;
+const MOVE_THRESHOLD = 30; // how far to drag before moving
 
 export default function Game2() {
     const router = useRouter();
-    const gridRef = useRef<HTMLDivElement>(null);
 
     const [maze, setMaze] = useState<number[][]>([]);
-    const [path, setPath] = useState<Set<string>>(new Set());
-    const [drawing, setDrawing] = useState(false);
-    const [started, setStarted] = useState(false);
+    const [player, setPlayer] = useState({ x: 1, y: 1 });
 
-    const start = [1, 1];
+    const dragStart = useRef<{ x: number; y: number } | null>(null);
+    const dragDelta = useRef({ x: 0, y: 0 });
+
     const goal = [SIZE - 2, SIZE - 2];
 
     useEffect(() => {
@@ -53,141 +54,115 @@ export default function Game2() {
             }
         };
 
-        grid[start[1]][start[0]] = 0;
-        carve(start[0], start[1]);
-
+        grid[1][1] = 0;
+        carve(1, 1);
         grid[goal[1]][goal[0]] = 0;
 
         setMaze(grid);
+        setPlayer({ x: 1, y: 1 });
     };
 
-    const handleEnter = (x: number, y: number) => {
-        if (!drawing) return;
-        if (maze[y][x] === 1) return;
+    const tryMove = (dx: number, dy: number) => {
+        const newX = player.x + dx;
+        const newY = player.y + dy;
 
-        const key = `${x}-${y}`;
-        setPath((prev) => new Set(prev).add(key));
+        if (
+            newX < 0 ||
+            newY < 0 ||
+            newX >= SIZE ||
+            newY >= SIZE
+        )
+            return;
 
-        if (x === goal[0] && y === goal[1]) {
+        if (maze[newY][newX] === 1) return;
+
+        setPlayer({ x: newX, y: newY });
+
+        if (newX === goal[0] && newY === goal[1]) {
             completeGame(2);
             router.push("/");
         }
     };
 
-    const getCellFromPointer = (clientX: number, clientY: number) => {
-        const rect = gridRef.current?.getBoundingClientRect();
-        if (!rect) return null;
-
-        const x = Math.floor(((clientX - rect.left) / rect.width) * SIZE);
-        const y = Math.floor(((clientY - rect.top) / rect.height) * SIZE);
-
-        if (x >= 0 && y >= 0 && x < SIZE && y < SIZE) {
-            return { x, y };
-        }
-
-        return null;
-    };
-
     const handlePointerDown = (e: React.PointerEvent) => {
-        const cell = getCellFromPointer(e.clientX, e.clientY);
-        if (!cell) return;
-
-        // Must start on pink tile
-        if (cell.x === start[0] && cell.y === start[1]) {
-            setDrawing(true);
-            setPath(new Set([`${cell.x}-${cell.y}`]));
-        }
+        dragStart.current = { x: e.clientX, y: e.clientY };
+        dragDelta.current = { x: 0, y: 0 };
     };
 
     const handlePointerMove = (e: React.PointerEvent) => {
-        if (!drawing) return;
+        if (!dragStart.current) return;
 
-        const cell = getCellFromPointer(e.clientX, e.clientY);
-        if (!cell) return;
+        dragDelta.current.x += e.movementX;
+        dragDelta.current.y += e.movementY;
 
-        handleEnter(cell.x, cell.y);
+        if (Math.abs(dragDelta.current.x) > MOVE_THRESHOLD) {
+            if (dragDelta.current.x > 0) tryMove(1, 0);
+            else tryMove(-1, 0);
+            dragDelta.current.x = 0;
+        }
+
+        if (Math.abs(dragDelta.current.y) > MOVE_THRESHOLD) {
+            if (dragDelta.current.y > 0) tryMove(0, 1);
+            else tryMove(0, -1);
+            dragDelta.current.y = 0;
+        }
     };
 
     const handlePointerUp = () => {
-        setDrawing(false);
+        dragStart.current = null;
+        dragDelta.current = { x: 0, y: 0 };
     };
 
-    if (maze.length === 0) return null;
+    if (!maze.length) return null;
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white select-none">
-            <button
-                onClick={() => router.push("/")}
-                className="absolute top-4 left-4 p-2 bg-white/10 rounded-full hover:bg-white/20 transition backdrop-blur-md z-50"
+        <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white touch-none">
+            <h2 className="mb-4 text-pink-500 font-bold">
+                Drag to Guide the Love ❤️
+            </h2>
+
+            <div
+                className="relative"
+                style={{
+                    width: SIZE * CELL,
+                    height: SIZE * CELL,
+                }}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
             >
-                🏠
-            </button>
+                {maze.map((row, y) =>
+                    row.map((cell, x) => (
+                        <div
+                            key={`${x}-${y}`}
+                            className={`absolute ${cell === 1
+                                ? "bg-gray-900"
+                                : x === goal[0] && y === goal[1]
+                                    ? "bg-green-500"
+                                    : "bg-gray-600"
+                                }`}
+                            style={{
+                                width: CELL,
+                                height: CELL,
+                                left: x * CELL,
+                                top: y * CELL,
+                            }}
+                        />
+                    ))
+                )}
 
-            {!started ? (
-                <div className="text-center p-8 max-w-md">
-                    <h1 className="text-4xl mb-6 font-bold text-pink-500">
-                        Love Maze
-                    </h1>
-                    <p className="text-lg mb-8 opacity-80 leading-relaxed">
-                        Touch and drag from the pink start to the green goal ❤️
-                    </p>
-                    <button
-                        onClick={() => setStarted(true)}
-                        className="px-8 py-3 bg-pink-600 text-white rounded-full text-xl hover:scale-105 transition font-bold shadow-lg shadow-pink-500/30"
-                    >
-                        Start Game
-                    </button>
-                </div>
-            ) : (
-                <>
-                    <h2 className="text-2xl mb-4 text-pink-500 font-bold">
-                        Drag to draw!
-                    </h2>
-
-                    <div
-                        ref={gridRef}
-                        className="grid touch-none"
-                        style={{
-                            gridTemplateColumns: `repeat(${SIZE}, 1fr)`,
-                            width: "85vw",
-                            maxWidth: "700px",
-                        }}
-                        onPointerDown={handlePointerDown}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={handlePointerUp}
-                        onPointerLeave={handlePointerUp}
-                    >
-                        {maze.map((row, y) =>
-                            row.map((cell, x) => {
-                                const key = `${x}-${y}`;
-                                const isStart = x === start[0] && y === start[1];
-                                const isGoal = x === goal[0] && y === goal[1];
-                                const isPath = path.has(key);
-
-                                return (
-                                    <div
-                                        key={key}
-                                        className={`aspect-square ${cell === 1
-                                                ? "bg-gray-900"
-                                                : isStart
-                                                    ? "bg-pink-500"
-                                                    : isGoal
-                                                        ? "bg-green-500"
-                                                        : isPath
-                                                            ? "bg-purple-500"
-                                                            : "bg-gray-600"
-                                            }`}
-                                    />
-                                );
-                            })
-                        )}
-                    </div>
-
-                    <p className="mt-6 text-sm opacity-70">
-                        Start from pink.
-                    </p>
-                </>
-            )}
+                <div
+                    className="absolute bg-pink-500 rounded-full shadow-lg shadow-pink-500/60"
+                    style={{
+                        width: CELL * 0.7,
+                        height: CELL * 0.7,
+                        left: player.x * CELL + CELL * 0.15,
+                        top: player.y * CELL + CELL * 0.15,
+                        transition: "left 0.08s linear, top 0.08s linear",
+                    }}
+                />
+            </div>
         </div>
     );
 }
