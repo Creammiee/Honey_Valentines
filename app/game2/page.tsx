@@ -58,29 +58,6 @@ export default function Game2() {
 
         grid[goal[1]][goal[0]] = 0;
 
-        const gx = goal[0];
-        const gy = goal[1];
-
-        const neighbors = [
-            [gx + 1, gy],
-            [gx - 1, gy],
-            [gx, gy + 1],
-            [gx, gy - 1],
-        ];
-
-        const connected = neighbors.some(
-            ([nx, ny]) =>
-                nx >= 0 &&
-                ny >= 0 &&
-                nx < SIZE &&
-                ny < SIZE &&
-                grid[ny][nx] === 0
-        );
-
-        if (!connected && gx - 1 >= 0) {
-            grid[gy][gx - 1] = 0;
-        }
-
         setMaze(grid);
     };
 
@@ -118,6 +95,9 @@ export default function Game2() {
         if (cell.x === start[0] && cell.y === start[1]) {
             setDrawing(true);
             setPath(new Set([`${cell.x}-${cell.y}`]));
+
+            // CAPTURE POINTER ON GRID
+            gridRef.current?.setPointerCapture(e.pointerId);
         }
     };
 
@@ -130,8 +110,9 @@ export default function Game2() {
         handleEnter(cell.x, cell.y);
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e: React.PointerEvent) => {
         setDrawing(false);
+        gridRef.current?.releasePointerCapture(e.pointerId);
     };
 
     if (maze.length === 0) return null;
@@ -151,17 +132,7 @@ export default function Game2() {
                         Love Maze
                     </h1>
                     <p className="text-lg mb-8 opacity-80 leading-relaxed">
-                        Guide your path from the{" "}
-                        <span className="text-pink-400 font-bold">
-                            pink start
-                        </span>{" "}
-                        to the{" "}
-                        <span className="text-green-400 font-bold">
-                            green goal
-                        </span>
-                        .
-                        <br /><br />
-                        Drag from pink to green ❤️
+                        Drag from the pink start to the green goal ❤️
                     </p>
                     <button
                         onClick={() => setStarted(true)}
@@ -178,16 +149,16 @@ export default function Game2() {
 
                     <div
                         ref={gridRef}
-                        className="grid"
+                        className="grid touch-none"
                         style={{
                             gridTemplateColumns: `repeat(${SIZE}, 1fr)`,
                             width: "85vw",
                             maxWidth: "700px",
-                            touchAction: "none", // 🔥 critical for mobile
                         }}
                         onPointerDown={handlePointerDown}
                         onPointerMove={handlePointerMove}
                         onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
                         onPointerLeave={handlePointerUp}
                     >
                         {maze.map((row, y) =>
@@ -200,27 +171,21 @@ export default function Game2() {
                                 return (
                                     <div
                                         key={key}
-                                        className={`aspect-square
-                                            ${cell === 1
-                                                ? "bg-gray-900"
-                                                : isStart
-                                                    ? "bg-pink-500"
-                                                    : isGoal
-                                                        ? "bg-green-500"
-                                                        : isPath
-                                                            ? "bg-purple-500"
-                                                            : "bg-gray-600"
-                                            }
-                                        `}
+                                        className={`aspect-square ${cell === 1
+                                            ? "bg-gray-900"
+                                            : isStart
+                                                ? "bg-pink-500"
+                                                : isGoal
+                                                    ? "bg-green-500"
+                                                    : isPath
+                                                        ? "bg-purple-500"
+                                                        : "bg-gray-600"
+                                            }`}
                                     />
                                 );
                             })
                         )}
                     </div>
-
-                    <p className="mt-6 text-sm opacity-70">
-                        Drag from pink to green.
-                    </p>
                 </>
             )}
         </div>
